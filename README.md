@@ -3,41 +3,48 @@ This repository contains scripts for the post-processing of the output from EC-E
 <br />
 <br />
 ## AMET_land_surface.py
-The code aims to calculate the atmospheric meridional energy transport based on the output from EC-Earth simulation. This includes: <br />
+The code aims to calculate the atmospheric meridional energy transport (AMET) based on the direct output from EC-Earth simulation. The full pipeline includes steps as follows: <br />
 1.mass budget correction <br />
 2.vertical integral of zonally integrated meridional energy transport <br />
 <br />
-It also saves the following fields as netcdf files (3 hourly): <br />
-* Surface runoff                        [m] <br />
-* Sub-surface runoff                    [m] <br />
-* Snow albedo                           [0-1] <br />
-* Snow density                          [kg/m3] <br />
-* Volumetric soil water layer 1         [m3/m3] <br />
-* Volumetric soil water layer 2         [m3/m3] <br />
-* Volumetric soil water layer 3         [m3/m3] <br />
-* Volumetric soil water layer 4         [m3/m3] <br />
-* Soil temperature level 1              [K] <br />
-* Snow depth                            [m] <br />
-* Soil temperature level 2              [K] <br />
-* Soil temperature level 3              [K] <br />
-* Soil temperature level 4              [K] <br />
+More information about the implementation of the mass budget correction through the penalty on baratropic winds can be found in Trenberth's paper 'Climate Diagnostics from Global Analyses: Conservation of Mass in ECMWF Analyses'. <br>
+For the calculation of meridional transport, please refer to the work by Trenberth and Caron 'Estimates of Meridional Atmosphere and Ocean Heat Transports'. <br>
 
-It needs two input parameters:<br />
-* time (eg. 197901)<br />
-* input and output path<br />
+Following fields are saved as netcdf files with a frequency of 3 hour: <br />
+* 3 hourly U at 850, 500, 200 hPa <br />
+* 3 hourly V at 850, 500, 200 hPa <br />
+* 3 hourly T at 850, 500, 200 hPa <br />
+* 3 hourly Z at 850, 500, 200 hPa <br />
+* 3 hourly Q at 850, 500, 200 hPa <br />
+* 3 hourly PT,T2M,U10M,V10M,SLHF,SP,MSL,LSP,CP,TCC,SSHF,SSR,STR,TSR,TTR,SRO <br />
 
-where time is obtained by sys.stdin.readline(), thus the script will be executed through: <br />
-```
-$ python AMET_land_surface.py < input_time.txt
-```
-The input and output path shall be specified inside the script (in the input zone). <br />
+Each netCDF file containing all the fields above is approximately 7.6GB per month.
 
-The output from EC-Earth must have the standard name with the format as:
-```
-ICMGGECE3+197901 # output on gaussian grid
-ICMSHECE3+197901 # output on spectral coordinate, must be changed to gaussian grid
-```
-The script is recommended to be used together with the scheduler job_scheduler.sh.
+In addition, the monthly mean of each component of meridional energy transport is saved as well: <br>
+* monthly mean total AMET <br />
+* monthly mean internal energy transport <br />
+* monthly mean latent energy transport <br />
+* monthly mean geopotential transport <br />
+* monthly mean kinetic energy transport <br />
+* monthly mean meridional baratropic wind correction <br />
+* monthly mean zonal baratropic wind correction <br />
 
-## job_scheduler.sh
-This bash script aim to schedule and execute job for the post-processing of EC-Earth output on Cartesius.
+The fields above are saved as two seperate files containing spatial information and zonal integral. The netCDF files are approximately 22MB per month.
+
+The fields above are saved through the command line tool "CDO". <br>
+
+Please run the script in the following folder to perform the post-processing:<br>
+ece-postprocess/ece_postprocess/scripts/
+```
+$ python ece-postprocess --rundir <path> --expname <exp>
+```
+The details about the arguments can be found inside the script.<br>
+
+The output from EC-Earth must be provided with the standard name as:<br>
+```
+ICMGG<exp>+<time> # output on gaussian grid
+ICMSH<exp>+<time> # output on spectral coordinate, must be changed to gaussian grid
+```
+where <exp> is the experiment name, and <time> is the time of the exp. They shoud be given as the argument. <br>
+
+The script is recommended to be used together with the workflow manager [suite.rc](https://github.com/blue-action/ece-postprocess/blob/master/cylc/suite.rc). <br>
